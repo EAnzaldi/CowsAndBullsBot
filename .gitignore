@@ -1,1 +1,12 @@
-/target
+/target/
+**/*.rs.bk
+/Cargo.lock
+.idea/
+.vscode/
+*.code-workspace
+*.log
+.cache/
+tmp/
+*.http
+*.db
+.env
