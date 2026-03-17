@@ -1,0 +1,3 @@
+[submodule "CowsAndBulls-in-C"]
+	path = CowsAndBulls-in-C
+	url = https://github.com/crissoll/CowsAndBulls-in-C.git
