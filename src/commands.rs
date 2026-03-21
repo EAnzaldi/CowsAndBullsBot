@@ -9,10 +9,10 @@ use dptree::case;
 #[derive(Clone, Default)]
 pub enum State {
     #[default]
-    Start,
+    Idle,
     Waiting,
     Playing{
-        players: Vec<UserId>
+        players: Vec<i64>
     },
     End
 }
@@ -31,11 +31,8 @@ pub enum Command {
 pub fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
 
     let command_handler = teloxide::filter_command::<Command, _>()
-        .branch(
-            case![State::Start]
-                .branch(case![Command::Help].endpoint(help))
-                .branch(case![Command::Start].endpoint(start)),
-        )
+        .branch(case![Command::Help].endpoint(help))
+        .branch(case![State::Idle].branch(case![Command::Start].endpoint(start)))
         .branch(case![Command::Kill].endpoint(cancel));
 
     let message_handler = Update::filter_message()
@@ -55,7 +52,7 @@ pub fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'stat
 async fn start(bot: Bot, dialogue: Dialogue<State, InMemStorage<State>>, msg: Message)
     -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     bot.send_message(msg.chat.id, "Let's start!").await?;
-    dialogue.update(State::Waiting).await?;
+    dialogue.update(State::Playing { players: vec![1]}).await?;
     Ok(())
 }
 
@@ -68,13 +65,13 @@ async fn help(bot: Bot, msg: Message)
 async fn cancel(bot: Bot, dialogue: Dialogue<State, InMemStorage<State>>, msg: Message)
     -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     bot.send_message(msg.chat.id, "Cancelling the dialogue.").await?;
-    dialogue.exit().await?;
+    dialogue.update(State::Idle).await?;
     Ok(())
 }
 
 async fn invalid_state(bot: Bot, msg: Message)
     -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    bot.send_message(msg.chat.id, "Unable to handle the message. Type /help to see the usage.")
+    bot.send_message(msg.chat.id, "Invalid command: type /help to see the commands available.")
         .await?;
     Ok(())
 }
