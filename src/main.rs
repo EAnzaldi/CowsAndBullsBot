@@ -5,6 +5,7 @@ use teloxide::{
 
 pub mod commands;
 use commands::{schema, State};
+pub mod c_ffi;
 
 #[tokio::main]
 async fn main() {

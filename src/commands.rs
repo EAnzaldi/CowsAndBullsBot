@@ -6,6 +6,8 @@ use teloxide::{
 
 use dptree::case;
 
+use crate::c_ffi;
+
 #[derive(Clone, Default)]
 pub enum State {
     #[default]
@@ -52,7 +54,12 @@ pub fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'stat
 async fn start(bot: Bot, dialogue: Dialogue<State, InMemStorage<State>>, msg: Message)
     -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     bot.send_message(msg.chat.id, "Let's start!").await?;
+    unsafe {
+        c_ffi::setup_game();
+        c_ffi::start_new_game();
+    }
     dialogue.update(State::Playing { players: vec![1]}).await?;
+    bot.send_message(msg.chat.id, "Enter guess or command: ").await?;
     Ok(())
 }
 
