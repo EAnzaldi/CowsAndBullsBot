@@ -13,9 +13,8 @@ pub enum State {
     #[default]
     Idle,
     Waiting,
-    Playing{
-        players: Vec<i64>
-    },
+    Playing{ players: Vec<i64>},
+    ReceiveGuess,
     End
 }
 
@@ -32,35 +31,53 @@ pub enum Command {
 
 pub fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
 
+    //filtra i comandi ("/command")
     let command_handler = teloxide::filter_command::<Command, _>()
         .branch(case![Command::Help].endpoint(help))
         .branch(case![State::Idle].branch(case![Command::Start].endpoint(start)))
         .branch(case![Command::Kill].endpoint(cancel));
 
+    //filtra i messaggi
     let message_handler = Update::filter_message()
         .branch(command_handler)
+        .branch(case![State::ReceiveGuess]).endpoint(receive_guess)
         .branch(dptree::endpoint(invalid_state));
-    
-    /* 
+/* 
     let callback_query_handler = Update::filter_callback_query().branch(
-        case![State::ReceiveProductChoice { full_name }].endpoint(receive_product_selection),
+        case![State::ReceiveGuess { guess }].endpoint(receive_guess),
     );*/
 
     dialogue::enter::<Update, InMemStorage<State>, State, _>()
         .branch(message_handler)
-        //.branch(callback_query_handler)
+    //    .branch(callback_query_handler)
 }
 
 async fn start(bot: Bot, dialogue: Dialogue<State, InMemStorage<State>>, msg: Message)
     -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     bot.send_message(msg.chat.id, "Let's start!").await?;
     unsafe {
+        c_ffi::set_paths();
+        println!("Paths setup");
         c_ffi::setup_game();
+        println!("Game setup");
         c_ffi::start_new_game();
+        println!("Game started");
     }
-    dialogue.update(State::Playing { players: vec![1]}).await?;
+    
+    dialogue.update(State::ReceiveGuess).await?;
     bot.send_message(msg.chat.id, "Enter guess or command: ").await?;
     Ok(())
+}
+
+async fn receive_guess(bot: Bot, dialogue: Dialogue<State, InMemStorage<State>>,  msg: Message)
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let result = msg.text()  // Option<&str>
+                                    .map(|text| c_ffi::play_turn_wrapper(text))
+                                    .unwrap_or_else(|| "Messaggio non valido".to_string());
+    println!("Risultato: {:}", result);
+    bot.send_message(msg.chat.id, result).await?;
+    Ok(())
+
 }
 
 async fn help(bot: Bot, msg: Message)

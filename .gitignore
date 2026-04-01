@@ -10,3 +10,4 @@ tmp/
 *.http
 *.db
 .env
+/data/
