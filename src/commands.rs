@@ -76,6 +76,14 @@ async fn receive_guess(bot: Bot, dialogue: Dialogue<State, InMemStorage<State>>,
                                     .unwrap_or_else(|| "Messaggio non valido".to_string());
     println!("Risultato: {:}", result);
     bot.send_message(msg.chat.id, result).await?;
+
+    if unsafe { c_ffi::is_game_ended() } {
+        dialogue.update(State::Idle).await?;
+        let attempts = unsafe { c_ffi::get_attempt_number() };
+        let msg_string = format!("Congratulations! You won in {} attempts!", attempts);
+        bot.send_message(msg.chat.id, msg_string).await?;
+    }
+
     Ok(())
 
 }

@@ -10,6 +10,8 @@ unsafe extern "C" {
     pub unsafe fn play_turn_charptr(input_string: *mut c_char) -> *mut c_char;
     pub unsafe fn set_saves_folder_path(saves_path: *const c_char) -> bool;
     pub unsafe fn set_vocabolary_file_path(vocab_path: *const c_char) -> bool;
+    pub unsafe fn is_game_ended() -> bool;
+    pub unsafe fn get_attempt_number() -> usize;
 }
 
 pub fn play_turn_wrapper(s: &str) -> String {
