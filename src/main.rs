@@ -9,9 +9,12 @@ pub mod c_ffi;
 
 #[tokio::main]
 async fn main() {
-   if dotenvy::dotenv().is_ok(){
-      println!("Token retrieved.");
+   match dotenvy::dotenv() {
+      Ok(path) => println!("Token retrieved"),
+      Err(e) => println!("Token not found")
    }
+
+   println!("TELOXIDE_TOKEN = {:?}", std::env::var("TELOXIDE_TOKEN"));
 
    println!("Starting command bot...");
    let bot = Bot::from_env();
